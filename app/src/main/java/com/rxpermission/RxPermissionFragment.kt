@@ -1,18 +1,18 @@
 package com.rxpermission
 
 import android.annotation.TargetApi
+import android.app.Fragment
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import io.reactivex.processors.FlowableProcessor
+import io.reactivex.Flowable
 import io.reactivex.processors.PublishProcessor
 
 class RxPermissionFragment : Fragment() {
 
     private val PERMISSIONS_REQUEST_CODE = 0x42
 
-    private val mSubjects = HashMap<String, PublishProcessor<Permission>>()
+    val processor = HashMap<String, PublishProcessor<Permission>>()
     var mLogging = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,8 +42,8 @@ class RxPermissionFragment : Fragment() {
 
     fun onRequestPermissionsResult(permissions: Array<out String>, grantResults: IntArray, shouldShowRequestPermissionRationale: BooleanArray) {
         for (index in 0..permissions.size) {
-            val subject = mSubjects[permissions[index]] ?: return
-            mSubjects.remove(permissions[index])
+            val subject = processor[permissions[index]] ?: return
+            processor.remove(permissions[index])
             val granted = grantResults[index] == PackageManager.PERMISSION_GRANTED
             subject.onNext(Permission(permissions[index], granted, shouldShowRequestPermissionRationale[index]))
             subject.onComplete()
@@ -60,15 +60,15 @@ class RxPermissionFragment : Fragment() {
         return activity.packageManager.isPermissionRevokedByPolicy(permission, activity.packageName)
     }
 
-    fun getProcessorByPermission(permission: String): FlowableProcessor<Permission>? {
-        return mSubjects[permission]
-    }
-
     fun containsByPermission(permission: String): Boolean {
-        return mSubjects.containsKey(permission)
+        return processor.containsKey(permission)
     }
 
-    fun setProcessorByPermission(permission: String, processor: PublishProcessor<Permission>): PublishProcessor<Permission>? {
-        return mSubjects.put(permission, processor)
+    fun getProcessorByPermission(permission: String): Flowable<Permission>? {
+        return processor[permission]
+    }
+
+    fun setProcessorForPermission(permission: String, processor: PublishProcessor<Permission>) {
+        this.processor[permission] = processor
     }
 }
