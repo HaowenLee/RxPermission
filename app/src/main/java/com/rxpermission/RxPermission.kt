@@ -4,7 +4,7 @@ import android.annotation.TargetApi
 import android.app.Activity
 import android.os.Build
 import io.reactivex.Flowable
-import io.reactivex.FlowableTransformer
+import io.reactivex.functions.Function
 import io.reactivex.processors.PublishProcessor
 
 class RxPermission(activity: Activity) {
@@ -34,68 +34,27 @@ class RxPermission(activity: Activity) {
         return activity.fragmentManager.findFragmentByTag(TAG) as RxPermissionFragment?
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
-    fun ensure(permissions: Array<out String>): FlowableTransformer<in Nothing?, out Boolean>? {
-        return FlowableTransformer {
-            trigger ->
-            request(trigger, permissions)
-                    .buffer(permissions.size)
-                    .flatMap {
-                        permissions: List<Permission> ->
-                        if (permissions.isEmpty()) {
-                            Flowable.empty<Boolean>()
-                        }
-                        // Return true if all permissions are granted
-                        for ((_, granted) in permissions) {
-                            if (!granted) {
-                                Flowable.just(false)
-                            }
-                        }
-                        Flowable.just(true)
-                    }
-        }
-    }
-
-    fun ensureEach(permissions: Array<out String>): FlowableTransformer<Nothing?, Permission> {
-        return FlowableTransformer { trigger -> request(trigger, permissions) }
-    }
-
     @SuppressWarnings("WeakerAccess", "unused")
     @TargetApi(Build.VERSION_CODES.M)
     fun request(vararg permissions: String): Flowable<Boolean> {
-        return Flowable.just(null).compose(ensure(permissions))
-    }
 
-    @SuppressWarnings("WeakerAccess", "unused")
-    @TargetApi(Build.VERSION_CODES.M)
-    fun requestEach(vararg permissions: String): Flowable<Permission> {
-        return Flowable.just(null).compose(ensureEach(permissions))
-    }
-
-    @TargetApi(Build.VERSION_CODES.M)
-    private fun request(trigger: Flowable<Nothing?>?, permissions: Array<out String>): Flowable<Permission> {
         if (permissions.isEmpty()) {
-            throw IllegalArgumentException("RxPermission.request/requestEach requires at least one input permission")
+            throw IllegalArgumentException("RxPermission.requestP/requestEach requires at least one input permission")
         }
-        return oneOf(trigger, pending(permissions))
-                .flatMap {
-                    requestImplementation(permissions)
-                }
-    }
 
-    private fun oneOf(trigger: Flowable<Nothing?>?, pending: Flowable<Nothing?>): Flowable<Permission> {
-        if (trigger == null) {
-            return Flowable.just(null)
-        }
-        return Flowable.merge(trigger, pending)
-    }
-
-    private fun pending(permissions: Array<out String>): Flowable<Nothing?> {
-        return if (permissions.none { mRxPermissionFragment.containsByPermission(it) }) {
-            Flowable.empty()
-        } else {
-            Flowable.just(null)
-        }
+        return requestImplementation(permissions)
+                .buffer(permissions.size)
+                .flatMap(Function<List<Permission>, Flowable<Boolean>> { permissions ->
+                    if (permissions.isEmpty()) {
+                        return@Function Flowable.empty()
+                    }
+                    for ((_, granted) in permissions) {
+                        if (!granted) {
+                            return@Function Flowable.just(false)
+                        }
+                    }
+                    Flowable.just(true)
+                })
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -123,13 +82,14 @@ class RxPermission(activity: Activity) {
             }
 
             list.add(processor!!)
-
-            if (unRequestedPermissions.isNotEmpty()) {
-                val unRequestedPermissionsArray = unRequestedPermissions.toTypedArray()
-                requestPermissionsFromFragment(unRequestedPermissionsArray)
-            }
         }
-        return Flowable.concat { Flowable.fromArray(list) }
+
+        if (unRequestedPermissions.isNotEmpty()) {
+            val unRequestedPermissionsArray = unRequestedPermissions.toTypedArray()
+            requestPermissionsFromFragment(unRequestedPermissionsArray)
+        }
+
+        return Flowable.concat(list)
     }
 
     fun shouldShowRequestPermissionRationale(activity: Activity, vararg permissions: String): Flowable<Boolean> {

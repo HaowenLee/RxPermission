@@ -33,7 +33,7 @@ class RxPermissionFragment : Fragment() {
 
         val shouldShowRequestPermissionRationale = BooleanArray(permissions.size)
 
-        for (index in 0..permissions.size) {
+        for (index in 0..permissions.size - 1) {
             shouldShowRequestPermissionRationale[index] = shouldShowRequestPermissionRationale(permissions[index])
         }
 
@@ -41,7 +41,7 @@ class RxPermissionFragment : Fragment() {
     }
 
     fun onRequestPermissionsResult(permissions: Array<out String>, grantResults: IntArray, shouldShowRequestPermissionRationale: BooleanArray) {
-        for (index in 0..permissions.size) {
+        for (index in 0..permissions.size - 1) {
             val subject = processor[permissions[index]] ?: return
             processor.remove(permissions[index])
             val granted = grantResults[index] == PackageManager.PERMISSION_GRANTED
