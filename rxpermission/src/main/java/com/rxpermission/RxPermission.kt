@@ -89,7 +89,9 @@ class RxPermission(activity: Activity) {
 
         if (unRequestedPermissions.isNotEmpty()) {
             val unRequestedPermissionsArray = unRequestedPermissions.toTypedArray()
-            requestPermissionsFromFragment(unRequestedPermissionsArray)
+            if (isMarshmallow()) {
+                requestPermissionsFromFragment(unRequestedPermissionsArray)
+            }
         }
 
         return Flowable.concat(list)
