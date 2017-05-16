@@ -1,1 +1,1 @@
-# RxPermission
+# RxPermission base on RxJava 2.x & Kotlin
