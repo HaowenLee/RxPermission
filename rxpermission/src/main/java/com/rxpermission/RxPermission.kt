@@ -3,6 +3,7 @@ package com.rxpermission
 import android.annotation.TargetApi
 import android.app.Activity
 import android.os.Build
+import android.util.Log
 import io.reactivex.Flowable
 import io.reactivex.functions.Function
 import io.reactivex.processors.PublishProcessor
@@ -91,6 +92,8 @@ class RxPermission(activity: Activity) {
             val unRequestedPermissionsArray = unRequestedPermissions.toTypedArray()
             if (isMarshmallow()) {
                 requestPermissionsFromFragment(unRequestedPermissionsArray)
+            } else {
+                Log.w(TAG, "Make sure you are android 6.0 above.")
             }
         }
 
