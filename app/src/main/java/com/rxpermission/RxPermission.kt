@@ -64,11 +64,14 @@ class RxPermission(activity: Activity) {
         val unRequestedPermissions = ArrayList<String>()
 
         for (permission in permissions) {
+            // If the permission has been granted to the given package.
             if (isGranted(permission)) {
                 list.add(Flowable.just(Permission(permission, true, false)))
                 continue
             }
 
+            // The user cannot grant policy revoked permissions.
+            // hence the only way for an app to get such a permission is by a policy change.
             if (isRevoked(permission)) {
                 list.add(Flowable.just(Permission(permission, false, false)))
                 continue
