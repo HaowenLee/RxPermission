@@ -1,1 +1,1 @@
-include ':app'
+include ':rxpermission_sample', ':rxpermission'
