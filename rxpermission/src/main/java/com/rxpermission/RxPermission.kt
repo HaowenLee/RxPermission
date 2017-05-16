@@ -39,7 +39,7 @@ class RxPermission(activity: Activity) {
     fun request(vararg permissions: String): Flowable<Boolean> {
 
         if (permissions.isEmpty()) {
-            throw IllegalArgumentException("RxPermission.requestP/requestEach requires at least one input permission")
+            throw IllegalArgumentException("RxPermission.request/requestEach requires at least one input permission")
         }
 
         return requestImplementation(permissions)
